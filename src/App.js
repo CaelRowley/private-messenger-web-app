@@ -5,36 +5,40 @@ class App extends Component {
   constructor() {
     super();
     this.state = {
-      endpoint: "http://localhost:3000",
-      color: 'white'
+      serverEndpoint: 'http://localhost:3000',
+      messageToSend: '',
+      messageLog: []
     };
   };
 
-  emitChangeColor = () => {
-    const socket = socketIOClient(this.state.endpoint);
-    socket.emit('change color', this.state.color);
+  componentDidMount() {
+    this.connectSocket();
   };
 
-  setColor = (color) => {
-    this.setState(
-      {
-        color
-      },
-      this.emitChangeColor
-    );
+  sendMessage = () => {
+    const socket = socketIOClient(this.state.serverEndpoint);
+    socket.emit('emit message', this.state.messageToSend);
+  };
+
+  prepareMessage = (event) => {
+    this.setState({ messageToSend: event.target.value });
+  };
+
+  connectSocket() {
+    const socket = socketIOClient(this.state.serverEndpoint);
+    socket.on('emit message', message => {
+      let { messageLog } = this.state;
+      messageLog.push(message);
+      this.setState({ messageLog });
+    });
   };
 
   render() {
-    const socket = socketIOClient(this.state.endpoint);
-
-    socket.on('change color', (color) => {
-      document.body.style.backgroundColor = color;
-    });
-
     return (
-      <div style={{ textAlign: "center" }} >
-        <button id="blue" onClick={() => this.setColor('blue')}>Blue</button>
-        <button id="red" onClick={() => this.setColor('red')}>Red</button>
+      <div style={{ textAlign: 'center' }} >
+        <textarea id="messageInputBox" onChange={this.prepareMessage}></textarea>
+        <button id='send message' onClick={() => this.sendMessage()}>Send Message</button>
+        <textarea readOnly value={this.state.messageLog}></textarea>
       </div>
     );
   };
